@@ -1,0 +1,95 @@
+
+#####################################################################################
+#######################################################################################
+
+
+
+colourIdealLineX <- function (x, y, c = "green") {
+
+ab <- lineFromPoints(x, y)
+newx = c(-1, 1)
+newy = ab[1]*newx + ab[2]
+
+lines (newx, newy, col=c)
+lines (x, y)
+}
+
+colourPerceptronX <- function(w, c="red")
+{
+
+	pa <- w[1]/-w[2]
+	pb <- w[3]/-w[2]
+	
+	
+	ppx <- c (0, 1)
+	ppy <- pa * ppx + pb
+
+	colourIdealLine (ppx, ppy, c)
+} 
+
+
+refreshX <- function () {
+frame()
+plot (TrainingSet_x, TrainingSet_y)
+colourTrainingSet (TrainingSet_x, TrainingSet_y, TrainingSet_map)
+colourIdealLine (idealLine_x, idealLine_y)
+colourPerceptron (pw)
+colourDataSet (TrainingSet_x, TrainingSet_y, TrainingSet_map, perceptronMap)
+
+}
+
+
+
+updateWeightsX <- function (w, x, y, c, s) {
+#pick the first 
+if (length (x[c<0] >0)) {
+  w[1] <- w[1] + x[c < 0] [1] * s[c < 0][1]
+  w[2] <- w[2] + y[c < 0] [1] * s[c < 0][1]
+  w[3] <- w[3]  
+ # print (x[c < 0] [1] * s[c < 0][1])
+ # print (y[c < 0] [1] * s[c < 0][1])
+ }
+ w
+}
+
+runTestX <- function(numberOfPoints) {
+
+### generate line to separate data set in good and bad points
+
+idealLine_x <- runif (2, -1, 1)
+idealLine_y <- runif (idealLine_x, -1, 1)
+idealLineParam <- lineFromPoints (idealLine_x, idealLine_y)
+
+###  generate training set coordinates for set D with  random points  (x,y)
+
+TrainingSet_x <- runif (numberOfPoints,-1,1)
+TrainingSet_y <- runif (TrainingSet_x,-1,1)
+TrainingSet_map <- sign(TrainingSet_y - (idealLineParam[1]*TrainingSet_x +idealLineParam[2]))
+
+###  plot
+plot (TrainingSet_x, TrainingSet_y)
+colourTrainingSet (TrainingSet_x, TrainingSet_y, TrainingSet_map)
+colourIdealLine (idealLine_x, idealLine_y)
+
+
+####  generate perceptron initial weights
+#pw <- runif (3,-1,1)
+pw <- c(0.5, 0.5, 0.5)
+colourPerceptron (pw)
+
+## find misclassified points
+perceptronMap <- runPerceptron (pw, TrainingSet_x, TrainingSet_y, TrainingSet_map)
+colourDataSet (TrainingSet_x, TrainingSet_y, TrainingSet_map, perceptronMap)
+
+loopcounter <- 0
+while ( length (TrainingSet_x[perceptronMap < 0 ]) > 0 && loopcounter < 100000)
+{
+loopcounter <- loopcounter + 1
+pw <- updateWeights(pw, TrainingSet_x, TrainingSet_y, perceptronMap, TrainingSet_map)
+perceptronMap <- runPerceptron (pw, TrainingSet_x, TrainingSet_y, TrainingSet_map)
+#length (TrainingSet_x[perceptronMap < 0 ])
+#refresh()
+}
+print (loopcounter)
+refresh()
+}
