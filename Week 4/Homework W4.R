@@ -353,3 +353,93 @@ ex6 <- function () {
   mean(vars)  
 }
 
+
+######################### ex7() ######################################
+#####  NO WORKING CODE 
+
+quadraticRoot <- function(a, b, c){
+  
+  sq <- sqrt(b^2 - 4*a*c)
+  r1 <- (b + sq) / 2*a
+  r2 <- (b - sq) / 2*a
+  
+  c(r1, r2)
+}
+
+
+generateZeroQuadHypothesis <- function () {
+  
+  x <- runif (2, -1, 1)
+  y <- sin(pi*x)
+  
+  #quadratic through origin and midpoint is our hypothesis
+  # WRONG!!!
+  hx <- (x[1] + x[2])/2
+  hy <- (y[1] + y[2])/2
+
+  
+  
+  x <- runif (2, -1, 1)
+  x <- c(0, 0.5)
+  
+  y <- sin(pi*x)
+  
+  x1 <- x[1]
+  x2 <- x[2]
+  y1 <- y[1]
+  y2 <- y[2]
+  
+  #quadratic through origin is our hypothesis
+  qa <- (x1^4 + x2^4)/2
+  qb <- -(y1*(x1^2) + y2*(x2^2))
+  qc <- (y1^2 + y2^2)/2
+  
+  a <- quadraticRoot(qa, qb, qc)[1]
+  
+  
+  
+  #plotit()
+  
+  plotit <- function (){
+    testSet <- ((-500:500)/ 500) + 0.0001 #just avoid 0 
+    slopey <- a * testSet^2      
+    matplot (testSet,
+             cbind(sin(pi*testSet), slopey),
+             type = "l",
+             col=c("black", "blue", "red", "purple", "green"))
+    points (x, y)
+    #points (hx, hy, pch = 23)
+    lines (c(-1, 1), c(0, 0))
+  }
+  
+  
+  slope
+}
+
+
+
+################### ex 8 ####################
+
+
+mH8 <- function(N, q){
+  
+  if (N == 1) {
+    return (2)
+  } else {
+    return (2*mH8(N-1, q) - choose(N-1, q))
+  }
+  
+}
+
+
+ex8Table <- function (){
+  
+  m <- matrix(nrow=10, ncol=11)
+  for (N in 1:10) {
+   for (q in 1:11){
+     m[N,q] <- mH8(N, q)
+   } 
+  }
+  m
+}
+
