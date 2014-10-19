@@ -70,15 +70,29 @@ ex4 <- function () {
 ##################### Ex 5 ####################################################################
 
 gradient <- function (x, y, w){
-  y*x/(1 + exp(y*w*x))
+  - mean (y*x/(1 + exp(y*w*x)))
+}
+
+
+error <- function (x) {
+  u <- x[1]
+  v <- x[2]
+  (u * exp(v) -2 * v* exp(-u))^2
 }
 
 excercise5 <- function (){
   
-  x <- c(1, 1, 1)
-  y<- x
-  w <- x
-  gradient(x,y,w)
+  w <- c(0,0)
+  x <- c(1,1)
+  n <- 0.1
+  
+  repeat {
+  
+    w <- w  - n *gradient(x,y,w)
+    
+    if (error (x) < 10^14) break;
+  }
+  
   
 }
 
