@@ -65,14 +65,32 @@ ex4 <- function () {
 #   results to 0
 #   
 #   [e]
+  #
+  #  we also need derivative to v
+  #  (u * e^v -2 * v* e^(-u))^2
+  
+  #  (u * e^x -2 * x * e^(-u))^2
+  #  derivative : 2 e^(-2 u) (-2+e^(u+x) u) (e^(u+x) u-2 x)
+  #
 }
 
 ##################### Ex 5 ####################################################################
 
 gradient <- function (x, y, w){
+  # y is scalar, x, w are vectors.  gradient is scalar
   - mean (y*x/(1 + exp(y*w*x)))
 }
 
+derivative <- function (x) {
+  # this is only the derivative for u
+  u <- x[1]
+  v <- x[2]
+  
+  du <- 2 * (exp (v) + 2* v * exp (-u)) * (u*exp(v) - 2* v * exp(-u))
+  dv <- 2 * exp(-2*u)*(-2+exp(u+v)*u) * (exp(u+v)* u-2*v)
+  
+  c(du, dv)
+}
 
 error <- function (x) {
   u <- x[1]
@@ -80,19 +98,66 @@ error <- function (x) {
   (u * exp(v) -2 * v* exp(-u))^2
 }
 
+# gradient descent S19, 53:31
+
 excercise5 <- function (){
   
-  w <- c(0,0)
-  x <- c(1,1)
+  w <- c(1,1)
   n <- 0.1
   
-  repeat {
-  
-    w <- w  - n *gradient(x,y,w)
+  y <- error(w)
+  errors <- c()
     
-    if (error (x) < 10^14) break;
+  i <- 0
+  repeat {
+    i <- i+1
+    
+    w <- w - n*derivative(w)
+    y <- error(w)
+    errors <- c(errors, y)
+    
+    if (y < 10^-14 || i > 1000 ) break;
   }
-  
-  
+  print (w)
+  errors
 }
+
+# > err <- excercise5()
+# [1] 0.04473629 0.02395871
+# > err
+# [1] 1.159510e+00 1.007407e+00 9.900912e-02 8.660645e-03 1.817558e-04 1.297240e-06 7.291525e-09
+# [8] 4.009998e-11 2.201683e-13 1.208683e-15
+# > length(err)
+# [1] 10
+
+
+
+######################  Excercise 7 ###############################
+
+
+excercise7 <- function (){
+  
+  w <- c(1,1)
+  n <- 0.1
+  
+  errors <- c()
+  
+  for (i in 1:15) {
+    steps <- derivative(w)
+    ustep <- c(steps[1], 0)
+    w <- w - n * ustep
+    
+    steps <- derivative(w)
+    vstep <- c(0, steps[2])
+    w <- w - n * vstep
+  }
+
+  
+  y <- error(w)
+  
+  print (w)
+  y
+}
+
+
 
