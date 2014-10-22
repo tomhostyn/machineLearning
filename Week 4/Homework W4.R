@@ -1,3 +1,5 @@
+require(graphics)
+
 
 growthFunctionBound <- function (N, vcdim) {
   N^vcdim
@@ -36,98 +38,96 @@ excercise1 <- function (){
 ##############################################################################
 
 
-boundFunctions <- function (epsilon=0.01, vcdim = 50, delta = 0.05) {
-    
-  mH <- function (N) {
-    
-#    warning ("using simple approximate bound for mh(N). should be valid for large N")
-#   N^vcdim
-    
+vcdim <- 50
+delta <- 0.05
+
+mH <- function (N) {
+  if (N[1] < vcdim){
+    2^N
+  } else {
     sum(choose (N, 1:vcdim))
   }
-  
-  vcbound <- function (N) {epsilonFromN (N, vcdim, delta)}
-  
-  rademacherPenaltyBound <- function(N) {sqrt(2*log(2*N*mH(N))/N) + sqrt(2/N*log(1/delta)) + 1/N}
-  
-  parrontoVDB <- function (N) {sqrt(1/N*(2*epsilon + log(6*mH(2*N)/delta)))}
-  devroye <- function (N) {sqrt(1/(2*N)*(4*epsilon*(1 + epsilon) + log(4*mH(N*N)/delta)))}
-  
-  list(vcbound = vcbound, 
-       rademacherPenaltyBound = rademacherPenaltyBound,
-       parrontoVDB = parrontoVDB,
-       devroye = devroye)
 }
 
+vcbound <- function (N) {epsilonFromN (N, vcdim, delta)}
+rademacherPenaltyBound <- function(N) {sqrt(2*log(2*N*mH(N))/N) + sqrt(2/N*log(1/delta)) + 1/N}
+parrondoVDB <- function (N, epsilon) {
+  sqrt(1/N*(2*epsilon + log(6*mH(2*N)/delta)))
+}
 
-excercise2 <- function (N){
+devroye <- function (N, epsilon) {sqrt(1/(2*N)*(4*epsilon*(1 + epsilon) + log(4*mH(N^2)/delta)))}
+# mh(N^2) ln(10000^2^50 ) = 100*ln(10000). ignore the rest of mH.
+#devroye <- function (N, epsilon) {sqrt(1/(2*N)*(4*epsilon*(1 + epsilon) + 2*vcdim*log(N)*log(4/delta)))}
+
+initepsilon <- function (N, bound) {
+  epsilon = 1
+  print (epsilon)
+  repeat {
+    new_epsilon <- bound(N, epsilon)
+    
+    if (new_epsilon < epsilon){
+      print (new_epsilon)
+      epsilon <- new_epsilon
+    }
+    else {break}
+  }
+  new_epsilon
+}
+
   
-  # REMEMBER TO VARY epsilon  ?????????
- 
+
+excercise2 <- function (){
   
-  f <- boundFunctions ()
+  N <- 10000
   
-  x <- 2000:10000
-  vcbound <- f$vcbound(x)
-  rademacherPenaltyBound <- f$rademacherPenaltyBound(x)  
-  parrontoVDB_0.01 <- boundFunctions (0.01)$parrontoVDB(x)
-  parrontoVDB_0.005 <- boundFunctions (0.005)$parrontoVDB(x)
-  #  for large numbers, epsilon is very small (~3e-06 - so just pick one )
-  devroye_0.01 <- boundFunctions(0.01)$devroye(x)
-  devroye_0.005 <- boundFunctions(0.005)$devroye(x)
-  
-  
+  x <- 2000:N
+  vcbound <- vcbound(x)
+  rademacherPenaltyBound <- rademacherPenaltyBound(x)
+  parrondo_epsilon <- initepsilon(N, parrondoVDB)
+  parrondoVDB <- parrondoVDB(x, parrondo_epsilon)
+  devroye_epsilon <- initepsilon(N, devroye)
+  devroye <- devroye(x, devroye_epsilon)
+   
 #  plot (vcbound)
 #  plot (rademacherPenaltyBound, add=TRUE)
   
   matplot (x,
-           cbind(vcbound, rademacherPenaltyBound, parrontoVDB_0.01, devroye_0.01),
+           cbind(vcbound, rademacherPenaltyBound, parrondoVDB, devroye),
            type = "l",
            col=c("black", "blue", "red", "purple", "green"))
   
-  N <- 10000
-  list (vcbound = f$vcbound(N), 
-        rademacher = f$rademacherPenaltyBound(N),
-        Parrondo_0.01 = boundFunctions (0.01)$parrontoVDB(N),
-        devroye_0.01 = boundFunctions(0.01)$devroye(N))        
+  list (vcbound = vcbound(N), 
+        rademacher = rademacherPenaltyBound(N),
+        Parrondo = parrondoVDB(N, parrondo_epsilon),
+        devroye = devroye(N, devroye_epsilon))        
 }
-
-
 
 excercise3 <- function (){
   
-  # REMEMBER TO VARY epsilon  ?????????
-  
   N <- 5
-  f <- boundFunctions ()  
-  x <- 1:10
-  vcbound <- f$vcbound(x)
-  rademacherPenaltyBound <- f$rademacherPenaltyBound(x)  
-  parrontoVDB_1 <- boundFunctions (1)$parrontoVDB(x)
-  parrontoVDB_0.01 <- boundFunctions (0.01)$parrontoVDB(x)
-  parrontoVDB_0.005 <- boundFunctions (0.005)$parrontoVDB(x)
-  #  for large numbers, epsilon is very small (~3e-06 - so just pick one )
-  devroye_1 <- boundFunctions(1)$devroye(x)
-  devroye_0.01 <- boundFunctions(0.01)$devroye(x)
-  devroye_0.005 <- boundFunctions(0.005)$devroye(x)
   
+  x <- 1:10
+  vcbound <- vcbound(x)
+  rademacherPenaltyBound <- rademacherPenaltyBound(x)
+  parrondo_epsilon <- initepsilon(N, parrondoVDB)
+  parrondoVDB <- parrondoVDB(x, parrondo_epsilon)
+  devroye_epsilon <- initepsilon(N, devroye)
+  devroye <- devroye(x, devroye_epsilon)
   
   #  plot (vcbound)
   #  plot (rademacherPenaltyBound, add=TRUE)
   
   matplot (x,
-           cbind(vcbound, rademacherPenaltyBound, parrontoVDB_1, devroye_1),
+           cbind(vcbound, rademacherPenaltyBound, parrondoVDB, devroye),
            type = "l",
            col=c("black", "blue", "red", "purple", "green"))
   
-  list (vcbound = f$vcbound(N), 
-        rademacher = f$rademacherPenaltyBound(N),
-        devroye_1 = boundFunctions(1)$devroye(N),
-        Parrondo_1 = boundFunctions (1)$parrontoVDB(N),
-        devroye_0.0001 = boundFunctions(0.0001)$devroye(N),
-        Parrondo_0.0001 = boundFunctions (0.0001)$parrontoVDB(N))
-  
+  list (vcbound = vcbound(N), 
+        rademacher = rademacherPenaltyBound(N),
+        Parrondo = parrondoVDB(N, parrondo_epsilon),
+        devroye = devroye(N, devroye_epsilon))        
 }
+
 
 
 
@@ -182,7 +182,7 @@ sqErr <- function(d1, d2) {
 excercise4 <- function () {
   
   slopes <- c()
-  for (n in 1:100000) {
+  for (n in 1:10000) {
     s <- generateHypothesis()
     slopes <- c(slopes, s)
   }
@@ -195,18 +195,35 @@ generateHypothesis <- function () {
   
   x <- runif (2, -1, 1)
   y <- sin(pi*x)
-
-  #line through midpoint is our hypothesis
-  hx <- (x[1] + x[2])/2
-  hy <- (y[1] + y[2])/2
   
-  if (hx == 0 ) {
+  #use derivative of (f(x1) - y1)^2 + (f(x2) - y2)^2
+  
+  x1 <- x[1]
+  x2 <- x[2]
+  y1 <- y[1]
+  y2 <- y[2]
+  
+  a <- x1^2 + x2^2
+  b <- x1*y1 + x2*y2
+  if (a == 0 ) {
     warning( "zero hypothesis"); slope = generateHypothesis2()
   } else {
-  slope <- hy/hx
+  slope <- b/a
   }
 
-  #plotit()
+#  plotit()
+  ploterr()
+
+  ploterr <- function () {
+    vara <- ((-500:500)/ 500) + slope  
+    y <- (vara*x1 - y1)^2 + (vara*x2 - y2)^2
+    matplot (vara,
+             cbind(y, y),
+             type = "l",
+             col=c("black", "blue", "red", "purple", "green"))
+    lines (c(-1, 1), c(0, 0))
+    
+  }
   
   plotit <- function (){
     testSet <- ((-500:500)/ 500) + 0.0001 #just avoid 0 
@@ -216,10 +233,8 @@ generateHypothesis <- function () {
              type = "l",
              col=c("black", "blue", "red", "purple", "green"))
     points (x, y)
-    points (hx, hy, pch = 23)
     lines (c(-1, 1), c(0, 0))
   }
-  
 
   slope
 }
@@ -329,7 +344,7 @@ axCalcBias <- function (slope) {
 }
 
 ex5 <- function () {
-  slope <- 0.79;  # result of ex4
+  slope <- 1.42;  # result of ex4
   bias <- sapply (slope, axCalcBias) 
   data.frame(slope = slope, bias = bias)
 }
@@ -338,7 +353,7 @@ ex5 <- function () {
 
 
 axCalcVar <- function (s1, s2) {
-  nrPoints <- 10000
+  nrPoints <- 1000
   samples <- getxsamples(nrPoints)  
   
   y1 <- s1 * samples
@@ -348,8 +363,8 @@ axCalcVar <- function (s1, s2) {
 
 
 ex6 <- function () {
-  gavg <- 0.79
-  vars <- sapply (1:10000, function (x) {axCalcVar(gavg, generateHypothesis())}) 
+  gavg <- 1.42
+  vars <- sapply (1:1000, function (x) {axCalcVar(gavg, generateHypothesis())}) 
   mean(vars)  
 }
 
