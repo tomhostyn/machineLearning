@@ -151,7 +151,6 @@ excercise7 <- function (){
     vstep <- c(0, steps[2])
     w <- w - n * vstep
   }
-
   
   y <- error(w)
   
@@ -161,3 +160,132 @@ excercise7 <- function (){
 
 
 
+####################### ex 8 ############################
+
+getLine <- function (x, y) {
+  r <- c()
+  r$slope <-(y[2] - y[1])/(x[2] - x [1])
+  r$intercept <- y[1] - r$slope * x[1]
+  r
+}
+
+drawLine <- function (slope, intercept, c) {
+  newx <- c(-1, 1)
+  newy <- slope*newx + intercept
+  lines (newx, newy, col=c)
+}
+
+
+getTestData <- function (N=10) {
+  fx <- runif (2, -1, 1)
+  fy <- runif (fx, -1, 1)
+  line <- getLine (fx, fy)
+  
+  x1 <- runif (N,-1,1)
+  x2 <- runif (x1,-1,1)
+  y <- sign(x2 - (line$slope*x1 + line$intercept))
+  
+  list(line = line, x1=x1, x2=x2, y=y)
+}
+
+norm_vec <- function(x) sqrt(sum(x^2))
+
+#NOTE: taking point per point, rather than calculating the gradient in 1 go using the formula in slide 23
+# this is what the excercise suggests but check on forum!
+
+
+
+logisticRegression <- function(p) {
+  p$w <- c(0,0,0)
+  eta <- 0.1
+  
+  samples <- cbind ( x0 = 1, x1 = p$x1, x2 = p$x2)
+  y <- p$y
+  N <- length (p$x1)
+  
+  epoch <- 1  
+  old_w <- p$w
+  repeat {
+    permutation <- sample (1:N, N)  #shuffle the samples
+    
+    for (perm in 1:N){
+      i <- permutation[perm]
+      T <- y[i] * samples[i,]
+      div <- 1 + exp(y[i] * sum(p$w* samples [i,]))
+      gradient <- T/(N*div)
+      #gradient <- T/(div)
+      
+      p$w <- p$w - eta * gradient 
+    }
+    #get gradient
+    epoch <- epoch +1    
+   
+    diff <- p$w - old_w
+    old_w <- p$w
+    if (norm_vec(diff) < 0.01) {break}
+  }
+    
+  p$logistic <-lineFromWeights(p$w)
+  p$epoch <- epoch
+  p
+}
+
+calcEout <- function (p) {
+  N <- 1000
+  x1 <- runif (N,-1,1)
+  x2 <- runif (x1,-1,1)
+  
+  fy <- sign(x2 - (p$line$slope*x1 + p$line$intercept))
+  gy <- sign(x2 - (p$logistic$slope*x1 + p$logistic$intercept))
+
+  sum (fy == gy)/N
+}
+  
+
+ex9 <- function(N = 100, loops = 1000) {
+  
+  errors <- c()
+  epochs <- c()
+  warning ("check if i am calculating cross entropy error!")
+  for (i in 1:loops) {
+    p <- getTestData(N)
+    q <- logisticRegression(p)
+    err <- calcEout(q)
+    
+    errors <- c(errors, err)
+    epochs <- c(epochs, q$epoch)
+  }
+  
+  l<-list(errors = errors, epochs = epochs)
+  l
+}
+
+
+lineFromWeights <- function (w) {
+  #expecting (wx0, wx1, wx2) from lm coefficients
+  if (w[3] == 0 ){
+    warning ( "horizontal line!  salt it a little bit")
+    w[3] <- 1/1000000
+  }
+  
+  c(slope = -w[2]/w[3],intercept = -w[1]/w[3])
+}
+
+
+refresh <- function (p, silent=TRUE , new=FALSE) {
+  frame()
+  plot (c(-1, 1), c(-1, 1), type = "n")
+  
+  points (p$x1 [p$y > 0] , p$x2[p$y > 0], col = "blue")
+  points (p$x1 [p$y < 0] , p$x2[p$y < 0], col = "red")
+  drawLine(p$line$slope, p$line$intercept, "blue")	
+  
+  if ( ! is.null (p$w)) {
+    l <- lineFromWeights(p$w)
+    drawLine (l["slope"], l["intercept"], "red")
+    ###  good training points, incorrectly classified in lm
+    #points (p$x1 [p$y > 0 & p$lm_clfn < 0 ] , p$x2[p$y > 0 & p$lm_clfn < 0], col = "blue", pch = "-")
+    ### bad training points, incorrectly classified in lm
+    #points (p$x1 [p$y < 0 & p$lm_clfn > 0 ] , p$x2[p$y < 0 & p$lm_clfn > 0], col = "red", pch = "-")    
+  }
+}
