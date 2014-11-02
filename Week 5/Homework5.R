@@ -197,7 +197,7 @@ norm_vec <- function(x) sqrt(sum(x^2))
 
 logisticRegression <- function(p) {
   p$w <- c(0,0,0)
-  eta <- 0.1
+  eta <- 0.01
   
   samples <- cbind ( x0 = 1, x1 = p$x1, x2 = p$x2)
   y <- p$y
