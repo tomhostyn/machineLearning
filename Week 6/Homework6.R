@@ -60,3 +60,75 @@ ex2 <- function (){
   
   list (insample = insample_err, outsample = outsample_err)
 }
+
+
+
+
+
+#########################  NEURAL NETWORKS #####################
+
+
+# Slide 14
+
+ex8 <- function () {
+ L=2
+ d0 = 5
+ d1 =3
+ d2 = 1
+ 
+ # wx
+ forward <- 5*3 + 3*1
+ 
+ #w*delta
+ delta_to_weights <-  3*3 
+  # assume not for input notes. output node delta calc does not have multiplication.
+ #xdelta
+ xdelta <- forward
+ 
+ forward+xdelta + delta_to_weights
+  
+}
+
+ex9 <- function () {
+  
+  input <- 10
+  hidden <- 36
+  
+# minimize combinations, so all in 1 layer. don't forget output needs weights too.
+  (input +1 ) * hidden 
+# = 396  but too big
+
+# consider all in 1 line
+  input + hidden +1
+
+}
+
+
+ex10 <- function () {
+  
+  input <- 10
+  hidden <- 36
+  
+  w <- c()
+  
+  # minimize combinations, so all in 1 layer. don't forget output needs weights too.
+  # w0 for each layer does not take a weight as input
+  w <- c(w,10 * 35 + 36) 
+  
+  # 10 input, 3 * 10 + 6
+  w <- c(w, 10*9 +2*9*9 + 9*5 + 5*1 )
+  
+  # 6 layers of 6
+  
+  width = 6
+  length = 6
+  w <- c(w, (input +1)* length + (length * length -1) * (width -1))
+
+  # 18 layers of 2
+  width = 18
+  length = 2
+  w <- c(w, (input +1)* length + (length * length -1) * (width -1))
+  
+  w
+}
+
