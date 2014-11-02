@@ -146,7 +146,7 @@ excercise7 <- function (){
     steps <- derivative(w)
     ustep <- c(steps[1], 0)
     w <- w - n * ustep
-    
+
     steps <- derivative(w)
     vstep <- c(0, steps[2])
     w <- w - n * vstep
@@ -212,8 +212,8 @@ logisticRegression <- function(p) {
       i <- permutation[perm]
       T <- y[i] * samples[i,]
       div <- 1 + exp(y[i] * sum(p$w* samples [i,]))
-      gradient <- T/(N*div)
-      #gradient <- T/(div)
+      #gradient <- - T/(N*div)
+      gradient <- - T/(div)
       
       p$w <- p$w - eta * gradient 
     }
@@ -236,24 +236,30 @@ calcEout <- function (p) {
   x2 <- runif (x1,-1,1)
   
   fy <- sign(x2 - (p$line$slope*x1 + p$line$intercept))
-  gy <- sign(x2 - (p$logistic$slope*x1 + p$logistic$intercept))
+  gy <- sign(x2 - (p$logistic["slope.x1"]*x1 + p$logistic["intercept.x0"]))
 
-  sum (fy == gy)/N
+  1- sum (fy == gy)/N
 }
-  
+   
 
-ex9 <- function(N = 100, loops = 1000) {
+ex9 <- function(N = 100, loops = 100) {
   
   errors <- c()
   epochs <- c()
-  warning ("check if i am calculating cross entropy error!")
   for (i in 1:loops) {
     p <- getTestData(N)
     q <- logisticRegression(p)
+    #refresh(q)
     err <- calcEout(q)
     
     errors <- c(errors, err)
     epochs <- c(epochs, q$epoch)
+    
+    if (i %% 5 == 1) { 
+      print (mean (errors))
+      print (mean (epochs))
+      print ("------")
+    }
   }
   
   l<-list(errors = errors, epochs = epochs)
@@ -282,7 +288,15 @@ refresh <- function (p, silent=TRUE , new=FALSE) {
   
   if ( ! is.null (p$w)) {
     l <- lineFromWeights(p$w)
-    drawLine (l["slope"], l["intercept"], "red")
+    drawLine (l["slope"], l["intercept"], "green")
+    ###  good training points, incorrectly classified in lm
+    #points (p$x1 [p$y > 0 & p$lm_clfn < 0 ] , p$x2[p$y > 0 & p$lm_clfn < 0], col = "blue", pch = "-")
+    ### bad training points, incorrectly classified in lm
+    #points (p$x1 [p$y < 0 & p$lm_clfn > 0 ] , p$x2[p$y < 0 & p$lm_clfn > 0], col = "red", pch = "-")    
+  }
+  
+  if ( ! is.null (p$logistic)) {
+    drawLine (p$logistic["slope.x1"], p$logistic["intercept.x0"], "red")
     ###  good training points, incorrectly classified in lm
     #points (p$x1 [p$y > 0 & p$lm_clfn < 0 ] , p$x2[p$y > 0 & p$lm_clfn < 0], col = "blue", pch = "-")
     ### bad training points, incorrectly classified in lm
