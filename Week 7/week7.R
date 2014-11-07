@@ -1,16 +1,16 @@
 
 
-setupEx1 <- function (data = read.table("in.dta")) {
+setupEx1 <- function (data, trainrange, valrange) {
   e <- list();
   train<- list()
-  e$train$x1 <- data$V1[1:25]
-  e$train$x2 <- data$V2[1:25]
-  e$train$y <- data$V3[1:25]
+  e$train$x1 <- data$V1[trainrange]
+  e$train$x2 <- data$V2[trainrange]
+  e$train$y <- data$V3[trainrange]
 
   val <- list()
-  val$x1 <- data$V1[26:length(data$V1)]
-  val$x2 <- data$V2[26:length(data$V1)]
-  val$y <- data$V3[26:length(data$V1)]
+  val$x1 <- data$V1[valrange]
+  val$x2 <- data$V2[valrange]
+  val$y <- data$V3[valrange]
   e$val <- val 
   
   e$train$x1x1 <- e$train$x1 * e$train$x1
@@ -44,15 +44,13 @@ ex1_clferr <- function (coef, x1, x2, y) {
   sum (z != y)/length(z)
 }
 
-
-ex1 <- function (){
+validation_ex <- function (trainrange, valrange){
   
   in.dta = read.table("in.dta")
   out.dta = read.table("out.dta")
-  
-  e <- setupEx1(in.dta)
-  
 
+  e <- setupEx1(in.dta, trainrange, valrange)
+  
   k1 <- coef(lm(y ~ 1+ x1, data=e$train))
   k2 <- coef(lm(y ~ 1+ x1 + x2, data=e$train))
   k3 <- coef(lm(y ~ 1+ x1 + x2 + x1x1, data=e$train))
@@ -74,7 +72,16 @@ ex1 <- function (){
   cbind (validation = val_err, outsample = outsample_err)
 }
 
+ex1 <- function (){
+  validation_ex(1:25, 26:35)  
+}
 
+
+#######################################
+
+ex3 <- function (){
+  validation_ex(26:35, 1:25)  
+}
 
 
 ########################################  
