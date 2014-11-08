@@ -94,3 +94,51 @@ ex6 <- function (){
   
   c(mean(e1), mean(e2), mean (emin))
 }
+
+
+
+###################### ex 7 ##############
+
+squared_err <- function (x, val){ sum ((x-val)^2) }
+
+ex7_constant <- function (x, y, val){
+  b = y[1] + (y[2] - y[1])/2
+  
+  squared_err(c(val[1], b), val)
+}
+
+ex7_linear <- function (x, y, val){
+  a <-(y[2] - y[1])/(x[2] - x [1])
+  b <- y[1] - a * x[1]
+
+  squared_err(c(val[1], a*val[1] + b), val)
+}
+
+
+ex7_leaveOneOut <- function(ro){
+  x <- c(-1, ro, 1)
+  y <- c(0, 1, 0)
+  
+  const_err <- c()
+  lin_err <- c()
+  for (i in 1:3) {
+    err <- ex7_constant (x[-i], y[-i], c(x[i], y[i]))
+    const_err <- c(const_err, err)
+    err <- ex7_linear (x[-i], y[-i], c(x[i], y[i]))
+    lin_err <- c(lin_err, err)
+  }
+  
+  c(mean (const_err), mean(lin_err))
+}
+
+ex7 <- function () {
+  sol <- c(sqrt(sqrt(3)+4), sqrt(sqrt(3)-1), sqrt(9 + 4*sqrt(6)), sqrt(9 - sqrt(6)))
+  
+  sapply (sol, ex7_leaveOneOut)
+}
+
+###########################  support vector machines #################
+
+library (quadprog)
+
+
