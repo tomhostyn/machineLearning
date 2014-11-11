@@ -405,7 +405,7 @@ solveSVM_W0 <- function(p){
   
   #now estimate b.  solve yn(wt*xn + b) = 1 for *any* non zero support vector
   
-  svi <- match (TRUE, p$sol$alpha > 1e-10) # index of first support vector
+  svi <- match (TRUE, p$sol$alpha > 1e-6) # index of first support vector
   
   wtxn <- p$svm.w0*x[svi,1] + p$svm.w1*x[svi,2]+ p$svm.w2*x[svi,3]
   
@@ -470,9 +470,6 @@ ex8 <- function () {
 }
 
 
-countNonZero <- function (v){
-  sum (v > 1e-5)
-}
 
 ex9 <- function () {
   EX9.PLA_err <<- c()
@@ -484,7 +481,7 @@ ex9 <- function () {
     p <- ex8_outOfSample(p)
     EX9.PLA_err <<- c(EX8.PLA_err, p$PLA_err)
     EX9.SVM_err <<- c(EX8.SVM_err, p$SVM_err)
-    EX10.SVM_NUMVEC <<- c(EX10.SVM_NUMVEC, sum (p$sol$alpha > 1e-5))
+    EX10.SVM_NUMVEC <<- c(EX10.SVM_NUMVEC, sum (p$sol$alpha > 1e-6))
     EX9.P[[i]] <<- p
   }
   sum(EX9.SVM_err <= EX9.PLA_err)/length(EX9.SVM_err)
