@@ -186,6 +186,11 @@ refresh <- function (p, silent=TRUE , new=FALSE) {
   if (! is.null (p$pa)){
     drawLine (p$pa, p$pb, "green")    
   }
+
+  if (! is.null (p$svm.a)){
+    drawLine (p$svm.a, p$svm.b, "red")    
+  }
+  
   
   if (! is.null (p$p_clfn)) {
     if (!silent) {
@@ -320,6 +325,55 @@ solvePerceptron <- function(p){
 solveSVM <- function(p){
   
   #create quadratic coefficients matrix
+  
+  el <- c() 
+  
+  x <- cbind (p$x1, p$x2)
+  y <- p$clfn
+  
+  nrow <- length(y)
+  ncol <- length(y)
+  k <- 0
+  for (r in 1:nrow){
+    for (c in 1:ncol){
+      el <- c(el, y[r]* y [c] * t(x[r,]) %*% x[c,])
+    }
+  }
+  HUGE <- 1e+20 # because Inf does not work
+  
+  p$Vmat <- matrix (el, nrow = nrow, byrow=TRUE)
+  p$Dvec <- matrix (-1, nrow= nrow, ncol = 1) 
+  p$Amat <- matrix (y, nrow=1, ncol=ncol)
+  p$bvec <- matrix (0, nrow=1, ncol=1)
+  p$uvec <- matrix (HUGE, nrow=nrow, ncol=1)
+  
+  p$sol <- LowRankQP(p$Vmat, p$Dvec, p$Amat,p$bvec, p$uvec, method = "LU")
+  
+  # we now have solved for alpha. calculate weights!  
+  p$svm.w1 <- sum(p$sol$alpha * y * x[,1])
+  p$svm.w2 <- sum(p$sol$alpha * y * x[,2])
+  
+  #now estimate b.  solve yn(wt*xn + b) = 1 for *any* non zero support vector
+  
+  svi <- match (TRUE, p$sol$alpha > 1e-5) # index of first support vector
+  
+  wtxn <-  p$svm.w1*x[svi,1]+ p$svm.w2*x[svi,2]
+  b <- 1/y[svi] - wtxn
+
+  p$svm.w0 <- b
+  
+  ab<-lineFromWeights(c(p$svm.w0, p$svm.w1, p$svm.w2))
+  p$svm.a <- ab[1]
+  p$svm.b <- ab[2]
+  
+  refresh(p)
+  p
+}
+
+
+solveSVM_W0 <- function(p){
+  warning ("DOES NOT PULL OUT w0")
+  #create quadratic coefficients matrix
   el <- c() 
   
   x <- cbind (1, p$x1, p$x2)
@@ -348,6 +402,19 @@ solveSVM <- function(p){
   p$svm.w0 <- sum(p$sol$alpha * y * x[,1])
   p$svm.w1 <- sum(p$sol$alpha * y * x[,2])
   p$svm.w2 <- sum(p$sol$alpha * y * x[,3])
+  
+  #now estimate b.  solve yn(wt*xn + b) = 1 for *any* non zero support vector
+  
+  svi <- match (TRUE, p$sol$alpha > 1e-10) # index of first support vector
+  
+  wtxn <- p$svm.w0*x[svi,1] + p$svm.w1*x[svi,2]+ p$svm.w2*x[svi,3]
+  
+  p$svm.b <- 1/y[svi] - wtxn
+  
+  ab<-lineFromWeights(c(p$svm.w0, p$svm.w1, p$svm.w2))
+  p$svm.a <- ab[1]
+  p$svm.b <- ab[2]
+  
   p
 }
 
@@ -388,10 +455,43 @@ ex8_outOfSample <- function (p) {
   p
 }
 
+
 ex8 <- function () {
+  EX8.PLA_err <<- c()
+  EX8.SVM_err <<- c()
   
-  p <-ex8_run(10)
-  p <- ex8_outOfSample(p)
-  c(p$PLA_err, p$SVM_err)
-  
+  for (i in 1:1000) {
+    p <-ex8_run(10)
+    p <- ex8_outOfSample(p)
+    EX8.PLA_err <<- c(EX8.PLA_err, p$PLA_err)
+    EX8.SVM_err <<- c(EX8.SVM_err, p$SVM_err)
+  }
+  sum(EX8.SVM_err <= EX8.PLA_err)/length(EX8.SVM_err)
+}
+
+
+countNonZero <- function (v){
+  sum (v > 1e-5)
+}
+
+ex9 <- function () {
+  EX9.PLA_err <<- c()
+  EX9.SVM_err <<- c()
+  EX9.P <<- list()
+  EX10.SVM_NUMVEC <<- c()
+  for (i in 1:1000) {
+    p <-ex8_run(100)
+    p <- ex8_outOfSample(p)
+    EX9.PLA_err <<- c(EX8.PLA_err, p$PLA_err)
+    EX9.SVM_err <<- c(EX8.SVM_err, p$SVM_err)
+    EX10.SVM_NUMVEC <<- c(EX10.SVM_NUMVEC, sum (p$sol$alpha > 1e-5))
+    EX9.P[[i]] <<- p
+  }
+  sum(EX9.SVM_err <= EX9.PLA_err)/length(EX9.SVM_err)
+}
+
+
+ex10 <- function(){
+  warning ("run ex9 first")
+  mean(EX10.SVM_NUMVEC)
 }
