@@ -8,7 +8,7 @@ ex1 <- function () {
 #  see slide 11:  w el of Rd --> d dimensional problem
 }
 
-experiment1 <- function (){
+exp1 <- function (d,C,Q){
   features.train <- read.table("features.train")
   names (features.train) <- c("digit", "symmetry", "intensity")
   
@@ -18,35 +18,80 @@ experiment1 <- function (){
   digits <- features.train
   plot (digits[,-1],
         col = digits[,1])
- 
   
-  digits <- prepOnevAll(features.train, 5)
+  digits <- prepOnevAll(features.train, d)
   
   plot (digits[-3],
         col = digits$y+2)
 
-  model <- svm ( y ~ . , data = digits, kernel="polynomial", cost = 0.01, 
-                 gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
+  model <- svm ( y ~ . , data = digits, cost = C,
+                 kernel="polynomial", 
+                 gamma=1, coef0=1, degree=Q, 
+                 scale=FALSE, 
+                 type="C-classification")
+    
+  sv <- 1:length(digits$y) %in% model$index
   
-#   sv <- 1:length(digits$y) %in% model$index
-#   plot (digits[-3],
-#         col = digits$y+2,
-#         pch = c("o","+")[1:length(digits$y) %in% model$index + 1])
-  
-plot (digits[-3],
-      col = c("black", "red", "green")[digits$y+sv])
+  plot (digits[-3],
+        col = digits$y+2)
 
-#   svm> plot(cmdscale(dist(iris[,-5])),
-#             svm+      col = as.integer(iris[,5]),
-#             svm+      pch = c("o","+")[1:150 %in% model$index + 1])
+  points (digits[sv,-3],
+      col = c("red", "blue")[(digits[sv,"y"]+1)/2],
+      pch = "+")
 
-
-
+  model
 }
+
+exp2 <- function (C,Q){
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+  
+  digits <- features.train
+  plot (digits[,-1],
+        col = digits[,1])
+  
+  digits <- prepOnevFive(features.train)
+  
+  plot (digits[-3],
+        col = digits$y+2)
+  
+  model <- svm ( y ~ . , data = digits, cost = C,
+                 kernel="polynomial", 
+                 gamma=1, coef0=1, degree=Q, 
+                 scale=FALSE, 
+                 type="C-classification")
+  
+  sv <- 1:length(digits$y) %in% model$index
+  
+  plot (digits[-3],
+        col = digits$y+2)
+  
+  points (digits[sv,-3],
+          col = c("red", "blue")[(digits[sv,"y"]+1)/2],
+          pch = "+")
+  
+  model
+}
+
+go1 <- function (){
+  exp1(1, 0.1, 2)
+  
+  exp1(1, 0.001, 2)
+
+  exp1(8, 0.1, 2)  
+  
+  exp1(5, 0.1, 2)  
+  exp2(0.1, 2)
+}
+
 
 prepOnevAll <- function (d, digit){
   y<-sapply (d$digit, 
              function (x) {if (x == digit) 1 else -1})
+#  y <- factor(y)
   x <- cbind (d, y=y)
   x <- subset (x, select = -digit)
   x
@@ -62,6 +107,7 @@ do_ex2 <- function () {
   names (features.test) <- c("digit", "symmetry", "intensity")
   
   C <- 0.01
+  Q <- 2
   
   EinErr <- c()
   supportVectorCount <- c()
@@ -73,8 +119,11 @@ do_ex2 <- function () {
     
     x<- prepOnevAll(features.train, i)
     
-    model <- svm ( y ~ . , data = x, kernel="polynomial", cost = C, 
-                   gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
+    model <- svm ( y ~ . , data = x, cost = C,
+                   kernel="polynomial", 
+                   gamma=1, coef0=1, degree=Q, 
+                   scale=FALSE, 
+                   type="C-classification")
     
     predEin <- predict (model, features.train)
     match <- sum(predEin == x$y)/ length(x$y)
@@ -92,7 +141,8 @@ if (! exists("EX2")){
 }
 
 ex2 <- function () {
-  EX2 <<- do_ex2()
+  if (is.null(EX2)){
+    EX2 <<- do_ex2()}
   ex2 <- cbind (answers,EX2[c(0,2,4,6,8)+1,])
   ex2
 }
