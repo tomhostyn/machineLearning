@@ -1,7 +1,9 @@
 library(e1071)
 # installed from http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 
-warning(" C-classification gave bad results, but default type also.  where is mistake?")
+warning(" C-classification gave bad results, but default type also. rsults make no sense. where is mistake?")
+warning(" check how to use svm call ??")
+
 ex1 <- function () {  
 #  see slide 11:  w el of Rd --> d dimensional problem
 }
@@ -178,4 +180,34 @@ ex7 <- function (){
     }
   
   cbind(costs, score, errs/100)
+}
+
+
+ex8 <- function (){
+  
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  OnevFive.train <- prepOnevFive(features.train)
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+  OnevFive.test <- prepOnevFive(features.test)
+  
+  EinErr <- c()
+  EoutErr <- c()
+
+  C <- c(0.01, 1, 100, 10^4, 10^6)
+    for (cost in C){
+      model <- svm ( y ~ . , data = OnevFive.train, kernel="radial", cost = cost, 
+                     scale=FALSE, type="C-classification")
+      
+      predEin <- predict (model, OnevFive.train)
+      match <- sum(predEin == OnevFive.train$y)/ length(OnevFive.train$y)
+      EinErr <- c(EinErr, match)
+      predEout <- predict (model, OnevFive.test)
+      match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
+      EoutErr <- c(EoutErr, match)
+    }
+  
+  cbind(C, EinErr, EoutErr)    
 }
