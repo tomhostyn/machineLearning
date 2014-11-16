@@ -8,6 +8,51 @@ ex1 <- function () {
 #  see slide 11:  w el of Rd --> d dimensional problem
 }
 
+experiment1 <- function (){
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+
+  digits <- features.train
+  plot (digits[,-1],
+        col = digits[,1])
+ 
+  
+  digits <- prepOnevAll(features.train, 5)
+  
+  plot (digits[-3],
+        col = digits$y+2)
+
+  model <- svm ( y ~ . , data = digits, kernel="polynomial", cost = 0.01, 
+                 gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
+  
+#   sv <- 1:length(digits$y) %in% model$index
+#   plot (digits[-3],
+#         col = digits$y+2,
+#         pch = c("o","+")[1:length(digits$y) %in% model$index + 1])
+  
+plot (digits[-3],
+      col = c("black", "red", "green")[digits$y+sv])
+
+#   svm> plot(cmdscale(dist(iris[,-5])),
+#             svm+      col = as.integer(iris[,5]),
+#             svm+      pch = c("o","+")[1:150 %in% model$index + 1])
+
+
+
+}
+
+prepOnevAll <- function (d, digit){
+  y<-sapply (d$digit, 
+             function (x) {if (x == digit) 1 else -1})
+  x <- cbind (d, y=y)
+  x <- subset (x, select = -digit)
+  x
+}
+
+
 do_ex2 <- function () {
 
   features.train <- read.table("features.train")
@@ -21,10 +66,12 @@ do_ex2 <- function () {
   EinErr <- c()
   supportVectorCount <- c()
   for (i in 0:9){
-    y<-sapply (features.train$digit, 
-               function (x) {if (x == i) 1 else -1})
-    x <- cbind (features.train, y=y)
-    x <- subset (x, select = -digit)
+#     y<-sapply (features.train$digit, 
+#                function (x) {if (x == i) 1 else -1})
+#     x <- cbind (features.train, y=y)
+#     x <- subset (x, select = -digit)
+    
+    x<- prepOnevAll(features.train, i)
     
     model <- svm ( y ~ . , data = x, kernel="polynomial", cost = C, 
                    gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
@@ -150,8 +197,10 @@ ex6 <- function (){
   list(a=a, b=b, c=c, d=d)  
 }
 
+library(caret)
 
 ex7 <- function (){
+  #http://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validation
   features.train <- read.table("features.train")
   names (features.train) <- c("digit", "symmetry", "intensity")
   OnevFive <- prepOnevFive(features.train)
@@ -160,26 +209,36 @@ ex7 <- function (){
   costs <- c(0.0001, 0.001, 0.01, 0.1, 1)
   score <- costs*0
   errsum <- costs * 0
+  cverrs <- c()
   for (i in 1:100){
-    class_i <- sample(1:length((OnevFive$y)), 10)
-    OnevFive.train <- OnevFive[-class_i, ]
-    OnevFive.test <- OnevFive[class_i, ]
-  
-    findClassErr <- function (cost) {
-      model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
-                   gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
-      
-      predEout <- predict (model, OnevFive.test)
-      match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
-      match
+    
+    folds <- createFolds(OnevFive$y, 10)
+    errs <- c()
+
+#    class_i <- sample(1:length((OnevFive$y)), length((OnevFive$y))/10)
+    for (fold_i in 1:10){
+      OnevFive.train <- OnevFive[unlist(folds[-fold_i]),]
+      OnevFive.test <- OnevFive[unlist(folds[fold_i]),]
+        
+      findClassErr <- function (cost) {
+        model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
+                     gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
+        
+        predEout <- predict (model, OnevFive.test)
+        match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
+        match
     }
-    errs <- sapply (costs, findClassErr)
-    errsum <- errsum + errs
-    best <- max(errs)
-    score <- score + sapply (errs, function(e){if (e == best) 1 else 0})
-    }
+
+    errs <- c(errs,sapply (costs, findClassErr))
+  }
+    
+    cverr <- mean (errs)
+    cverrs <- c(cverrs, cverr)
+    best <- max(cverr)
+    score <- score + sapply (cverr, function(e){if (e == best) 1 else 0})
+  }
   
-  cbind(costs, score, errs/100)
+  cbind(costs, score, mean(cverrs))
 }
 
 
