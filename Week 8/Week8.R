@@ -1,6 +1,7 @@
 library(e1071)
 # installed from http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 
+warning(" C-classification gave bad results, but default type also.  where is mistake?")
 ex1 <- function () {  
 #  see slide 11:  w el of Rd --> d dimensional problem
 }
@@ -23,7 +24,8 @@ do_ex2 <- function () {
     x <- cbind (features.train, y=y)
     x <- subset (x, select = -digit)
     
-    model <- svm ( y ~ . , data = x, kernel="polynomial", cost = C, gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
+    model <- svm ( y ~ . , data = x, kernel="polynomial", cost = C, 
+                   gamma=1, coef0=1, degree=2, scale=FALSE, type="C-classification")
     
     predEin <- predict (model, features.train)
     match <- sum(predEin == x$y)/ length(x$y)
@@ -43,6 +45,7 @@ if (! exists("EX2")){
 ex2 <- function () {
   EX2 <<- do_ex2()
   ex2 <- cbind (answers,EX2[c(0,2,4,6,8)+1,])
+  ex2
 }
 
 ex3 <- function () {
@@ -71,25 +74,25 @@ ex4 <- function () {
   abs(ex2_svc - ex3_svc)
 }
 
+prepOnevFive <- function (d){
+  d <- d [(d[,"digit"] == 1) | (d[,"digit"] == 5),]
+  y<-sapply (d$digit, 
+             function (x) {if (x == 1) 1 else -1})
+  x <- cbind (d, y=y)
+  x <- subset (x, select = -digit)
+  x
+}
+
 do_ex5 <- function (){
     
     features.train <- read.table("features.train")
     names (features.train) <- c("digit", "symmetry", "intensity")
+    OnevFive.train <- prepOnevFive(features.train)
     
     features.test <- read.table("features.test")
     names (features.test) <- c("digit", "symmetry", "intensity")
-    
-    features.train <- features.train [(features.train[,"digit"] == 1) | (features.train[,"digit"] == 5),]
-    y<-sapply (features.train$digit, 
-             function (x) {if (x == 1) 1 else -1})
-    x <- cbind (features.train, y=y)
-    x <- subset (x, select = -digit)
-
-    features.test <- features.test [(features.test[,"digit"] == 1) | (features.test[,"digit"] == 5),]
-    testy<-sapply (features.test$digit, 
-               function (x) {if (x == 1) 1 else -1})
-    features.test <- cbind (features.test, testy=testy)
-    
+    OnevFive.test <- prepOnevFive(features.test)
+        
     C <- c(0.0001, 0.001, 0.01, 0.1, 1)
     Q<- c(2, 5)
     
@@ -101,16 +104,16 @@ do_ex5 <- function (){
     
     for (q in Q){
       for (cost in C){
-        model <- svm ( y ~ . , data = x, kernel="polynomial", cost = cost, 
+        model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
                        gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
         
         CV <- c(CV,cost)
         QV <- c(QV, q)
-        predEin <- predict (model, features.train)
-        match <- sum(predEin == x$y)/ length(x$y)
+        predEin <- predict (model, OnevFive.train)
+        match <- sum(predEin == OnevFive.train$y)/ length(OnevFive.train$y)
         EinErr <- c(EinErr, match)
-        predEout <- predict (model, features.test)
-        match <- sum(predEout == features.test$testy)/ length(features.test$testy)
+        predEout <- predict (model, OnevFive.test)
+        match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
         EoutErr <- c(EoutErr, match)
         count <- length(model$coefs)
         supportVectorCount <- c(supportVectorCount, count)
@@ -120,15 +123,23 @@ do_ex5 <- function (){
     cbind(Q=QV, C=CV, EinErr, supportVectorCount, EoutErr)    
 }
 
+
+if (! exists("EX5")){
+  EX5 <- NULL
+}
+
 ex5 <- function (){
-  t <- do_ex5()
+  if (is.null(EX5)){
+    EX5 <<- do_ex5()}
+  t <- EX5
   t[t[,"Q"]==2 & t[,"C"]>0.0001,]
 }
 
 
-warning ("ex6 is wrong.  check EVERYTHING :(")
 ex6 <- function (){
-  t <- do_ex5()
+  if (is.null(EX5)){
+    EX5 <<- do_ex5()}
+  t <- EX5
   a <- t[t[,"C"]==0.0001 & t[,"Q"]==2, "EinErr"] < t[t[,"C"]==0.0001 & t[,"Q"]==5, "EinErr"]
   b <- t[t[,"C"]==0.001 & t[,"Q"]==2, "supportVectorCount"] > t[t[,"C"]==0.001 & t[,"Q"]==5, "supportVectorCount"]
   c <- t[t[,"C"]==0.01 & t[,"Q"]==2, "EinErr"] < t[t[,"C"]==0.01 & t[,"Q"]==5, "EinErr"]
@@ -137,3 +148,34 @@ ex6 <- function (){
   list(a=a, b=b, c=c, d=d)  
 }
 
+
+ex7 <- function (){
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  OnevFive <- prepOnevFive(features.train)
+    
+  q<-2
+  costs <- c(0.0001, 0.001, 0.01, 0.1, 1)
+  score <- costs*0
+  errsum <- costs * 0
+  for (i in 1:100){
+    class_i <- sample(1:length((OnevFive$y)), 10)
+    OnevFive.train <- OnevFive[-class_i, ]
+    OnevFive.test <- OnevFive[class_i, ]
+  
+    findClassErr <- function (cost) {
+      model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
+                   gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
+      
+      predEout <- predict (model, OnevFive.test)
+      match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
+      match
+    }
+    errs <- sapply (costs, findClassErr)
+    errsum <- errsum + errs
+    best <- max(errs)
+    score <- score + sapply (errs, function(e){if (e == best) 1 else 0})
+    }
+  
+  cbind(costs, score, errs/100)
+}
