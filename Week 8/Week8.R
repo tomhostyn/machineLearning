@@ -27,7 +27,7 @@ exp1 <- function (d,C,Q){
   model <- svm ( y ~ . , data = digits, cost = C,
                  kernel="polynomial", 
                  gamma=1, coef0=1, degree=Q, 
-                 scale=FALSE, 
+                 scale=FALSE, shrinking=FALSE,
                  type="C-classification")
     
   sv <- 1:length(digits$y) %in% model$index
@@ -61,7 +61,7 @@ exp2 <- function (C,Q){
   model <- svm ( y ~ . , data = digits, cost = C,
                  kernel="polynomial", 
                  gamma=1, coef0=1, degree=Q, 
-                 scale=FALSE, 
+                 scale=FALSE, shrinking=FALSE,
                  type="C-classification")
   
   sv <- 1:length(digits$y) %in% model$index
@@ -122,12 +122,12 @@ do_ex2 <- function () {
     model <- svm ( y ~ . , data = x, cost = C,
                    kernel="polynomial", 
                    gamma=1, coef0=1, degree=Q, 
-                   scale=FALSE, 
+                   scale=FALSE, shrinking=FALSE,
                    type="C-classification")
     
     predEin <- predict (model, features.train)
-    match <- sum(predEin == x$y)/ length(x$y)
-    EinErr <- c(EinErr, match)
+    m <- sum(predEin == x$y)/ length(x$y)
+    EinErr <- c(EinErr, m)
     count <- length(model$coefs)
     supportVectorCount <- c(supportVectorCount, count)
   }
@@ -204,7 +204,7 @@ do_ex5 <- function (){
     for (q in Q){
       for (cost in C){
         model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
-                       gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
+                       gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification")
         
         CV <- c(CV,cost)
         QV <- c(QV, q)
@@ -272,7 +272,7 @@ ex7 <- function (){
         
       findClassErr <- function (cost) {
         model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
-                     gamma=1, coef0=1, degree=q, scale=FALSE, type="C-classification")
+                     gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification")
         
         predEout <- predict (model, OnevFive.test)
         match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
@@ -308,7 +308,7 @@ ex8 <- function (){
   C <- c(0.01, 1, 100, 10^4, 10^6)
     for (cost in C){
       model <- svm ( y ~ . , data = OnevFive.train, kernel="radial", cost = cost, 
-                     scale=FALSE, type="C-classification")
+                     scale=FALSE, shrinking=FALSE, type="C-classification")
       
       predEin <- predict (model, OnevFive.train)
       match <- sum(predEin == OnevFive.train$y)/ length(OnevFive.train$y)
