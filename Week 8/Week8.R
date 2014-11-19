@@ -19,16 +19,25 @@ exp1 <- function (d,C,Q){
   plot (digits[,-1],
         col = digits[,1])
   
+  d <- 7
   digits <- prepOnevAll(features.train, d)
   
   plot (digits[-3],
         col = digits$y+2)
+  
+  Q<- 2
+  C<- 0.1
 
   model <- svm ( y ~ . , data = digits, cost = C,
                  kernel="polynomial", 
                  gamma=1, coef0=1, degree=Q, 
                  scale=FALSE, shrinking=FALSE,
-                 type="C-classification")
+                 type="C-classification",
+                 
+                 epsilon=0,
+                 nu=0.01,
+                 tolerance=0.001
+                 )
     
   sv <- 1:length(digits$y) %in% model$index
   
@@ -173,14 +182,53 @@ ex4 <- function () {
   abs(ex2_svc - ex3_svc)
 }
 
-prepOnevFive <- function (d){
-  d <- d [(d[,"digit"] == 1) | (d[,"digit"] == 5),]
+prepXvY <- function (d, digit1, digit2){
+  d <- d [(d$digit == digit1) | (d$digit == digit2),]
   y<-sapply (d$digit, 
              function (x) {if (x == 1) 1 else -1})
   x <- cbind (d, y=y)
   x <- subset (x, select = -digit)
   x
 }
+
+prepOnevFive <- function (d){
+#   d <- d [(d[,"digit"] == 1) | (d[,"digit"] == 5),]
+#   y<-sapply (d$digit, 
+#              function (x) {if (x == 1) 1 else -1})
+#   x <- cbind (d, y=y)
+#   x <- subset (x, select = -digit)
+#   x
+  prepXvY(d, 1, 5)
+}
+
+ghost <- function (digit1, digit2) {
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  ghost.train <- prepXvY(features.train, digit1, digit2)
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+  test <- prepXvY(features.test, digit1, digit2)
+
+  cost <- 1
+  q <- 2
+  
+  model <- svm ( y ~ . , data = ghost.train, kernel="polynomial", cost = cost, 
+                 gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification",
+                 epsilon=0,
+                 nu=0.01,
+                 tolerance=0.001)
+  
+  print(model)
+  
+  model2 <- svm (x=ghost.train, kernel="polynomial", cost = cost, 
+                 gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification",
+                 epsilon=0,
+                 nu=0.01,
+                 tolerance=0.001)
+  
+}
+
 
 do_ex5 <- function (){
     
