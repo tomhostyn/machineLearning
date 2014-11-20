@@ -408,3 +408,31 @@ ex9 <- function (){
   
   cbind(C, EinErr, EoutErr)    
 }
+
+ex9ghost <- function (){
+  
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  OnevFive.train <- prepXvY(features.train,4,6)
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+  OnevFive.test <- prepXvY(features.test,4,6)
+  
+  EinErr <- c()
+  EoutErr <- c()
+  
+  C <- c(0.01, 1, 100, 10^4, 10^6)
+  for (cost in C){
+    model <- svm ( y ~ . , data = OnevFive.train, kernel="radial", cost = cost, 
+                   scale=FALSE, shrinking=FALSE, type="C-classification",
+                   gamma=1)
+    
+    match <- getError(model, OnevFive.train)
+    EinErr <- c(EinErr, match)
+    match <- getError(model, OnevFive.test)
+    EoutErr <- c(EoutErr, match)
+  }
+  
+  cbind(C, EinErr, EoutErr)    
+}
