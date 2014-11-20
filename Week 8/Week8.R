@@ -1,9 +1,6 @@
 library(e1071)
 # installed from http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 
-warning(" C-classification gave bad results, but default type also. rsults make no sense. where is mistake?")
-warning(" check how to use svm call ??")
-
 ex1 <- function () {  
 #  see slide 11:  w el of Rd --> d dimensional problem
 }
@@ -134,9 +131,8 @@ do_ex2 <- function () {
                    scale=FALSE, shrinking=FALSE,
                    type="C-classification")
     
-    predEin <- predict (model, features.train)
-    m <- sum(predEin == x$y)/ length(x$y)
-    EinErr <- c(EinErr, m)
+    match <- getError(model, x)
+    EinErr <- c(EinErr, match)
     count <- length(model$coefs)
     supportVectorCount <- c(supportVectorCount, count)
   }
@@ -185,7 +181,7 @@ ex4 <- function () {
 prepXvY <- function (d, digit1, digit2){
   d <- d [(d$digit == digit1) | (d$digit == digit2),]
   y<-sapply (d$digit, 
-             function (x) {if (x == 1) 1 else -1})
+             function (x) {if (x == digit1) 1 else -1})
   x <- cbind (d, y=y)
   x <- subset (x, select = -digit)
   x
@@ -201,6 +197,11 @@ prepOnevFive <- function (d){
   prepXvY(d, 1, 5)
 }
 
+getError <- function (model, validation){
+  pred <- predict (model, validation)
+  1- sum(pred == validation$y)/ length(validation$y)
+}
+
 ghost <- function (digit1, digit2) {
   features.train <- read.table("features.train")
   names (features.train) <- c("digit", "symmetry", "intensity")
@@ -208,7 +209,7 @@ ghost <- function (digit1, digit2) {
   
   features.test <- read.table("features.test")
   names (features.test) <- c("digit", "symmetry", "intensity")
-  test <- prepXvY(features.test, digit1, digit2)
+  ghost.test <- prepXvY(features.test, digit1, digit2)
 
   cost <- 1
   q <- 2
@@ -221,11 +222,8 @@ ghost <- function (digit1, digit2) {
   
   print(model)
   
-  model2 <- svm (x=ghost.train, kernel="polynomial", cost = cost, 
-                 gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification",
-                 epsilon=0,
-                 nu=0.01,
-                 tolerance=0.001)
+  print(getError(model, ghost.train))
+  print(getError(model, ghost.test))
   
 }
 
@@ -256,11 +254,9 @@ do_ex5 <- function (){
         
         CV <- c(CV,cost)
         QV <- c(QV, q)
-        predEin <- predict (model, OnevFive.train)
-        match <- sum(predEin == OnevFive.train$y)/ length(OnevFive.train$y)
+        match <- getError(model, OnevFive.train)
         EinErr <- c(EinErr, match)
-        predEout <- predict (model, OnevFive.test)
-        match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
+        match <- getError(model, OnevFive.test)
         EoutErr <- c(EoutErr, match)
         count <- length(model$coefs)
         supportVectorCount <- c(supportVectorCount, count)
@@ -302,45 +298,90 @@ ex7 <- function (){
   features.train <- read.table("features.train")
   names (features.train) <- c("digit", "symmetry", "intensity")
   OnevFive <- prepOnevFive(features.train)
-    
+  
   q<-2
   costs <- c(0.0001, 0.001, 0.01, 0.1, 1)
   score <- costs*0
   errsum <- costs * 0
-  cverrs <- c()
+  all_cverr <- c()
   for (i in 1:100){
     
     folds <- createFolds(OnevFive$y, 10)
     errs <- c()
-
-#    class_i <- sample(1:length((OnevFive$y)), length((OnevFive$y))/10)
+    
+    #    class_i <- sample(1:length((OnevFive$y)), length((OnevFive$y))/10)
     for (fold_i in 1:10){
       OnevFive.train <- OnevFive[unlist(folds[-fold_i]),]
       OnevFive.test <- OnevFive[unlist(folds[fold_i]),]
-        
+      
       findClassErr <- function (cost) {
+        #print (OnevFive.test[1,])
         model <- svm ( y ~ . , data = OnevFive.train, kernel="polynomial", cost = cost, 
-                     gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification")
+                       gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification")
         
-        predEout <- predict (model, OnevFive.test)
-        match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
-        match
+        getError(model, OnevFive.test)
+      }
+      
+      errs <- cbind(errs, sapply (costs, findClassErr)) #append a column of errors.  
     }
-
-    errs <- c(errs,sapply (costs, findClassErr))
-  }
     
-    cverr <- mean (errs)
-    cverrs <- c(cverrs, cverr)
-    best <- max(cverr)
-    score <- score + sapply (cverr, function(e){if (e == best) 1 else 0})
+    cverr <- apply(errs,1,mean)  # get the cross validation errs as mean of the error of the 10 folds
+    
+    all_cverr <- cbind(all_cverr, cverr) #keep track of the errors cross validation errors
+    
+    best_i <- which.min(cverr)    
+    score[best_i] <- score[best_i] + 1
   }
   
-  cbind(costs, score, mean(cverrs))
+  cbind(costs, score, apply(all_cverr,1,mean))
+}
+
+ex7ghost <- function (){
+  #http://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validation
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  fourvsix <- prepXvY(features.train, 4,6)
+  
+  q<-2
+  costs <- c(0.0001, 0.001, 0.01, 0.1, 1)
+  score <- costs*0
+  errsum <- costs * 0
+  all_cverr <- c()
+  for (i in 1:100){
+    
+    folds <- createFolds(fourvsix$y, 10)
+    errs <- c()
+    
+    #    class_i <- sample(1:length((OnevFive$y)), length((OnevFive$y))/10)
+    for (fold_i in 1:10){
+      fourvsix.train <- fourvsix[unlist(folds[-fold_i]),]
+      fourvsix.test <- fourvsix[unlist(folds[fold_i]),]
+      
+      findClassErr <- function (cost) {
+        #print (OnevFive.test[1,])
+        model <- svm ( y ~ . , data = fourvsix.train, kernel="polynomial", cost = cost, 
+                       gamma=1, coef0=1, degree=q, scale=FALSE, shrinking=FALSE, type="C-classification")
+        
+        getError(model, fourvsix.test)
+      }
+      
+      errs <- cbind(errs, sapply (costs, findClassErr)) #append a column of errors.  
+    }
+    
+    cverr <- apply(errs,1,mean)  # get the cross validation errs as mean of the error of the 10 folds
+    
+    all_cverr <- cbind(all_cverr, cverr) #keep track of the errors cross validation errors
+    
+    best_i <- which.min(cverr)    
+    score[best_i] <- score[best_i] + 1
+  }
+  
+  cbind(costs, score, apply(all_cverr,1,mean))
 }
 
 
-ex8 <- function (){
+
+ex9 <- function (){
   
   features.train <- read.table("features.train")
   names (features.train) <- c("digit", "symmetry", "intensity")
@@ -356,13 +397,12 @@ ex8 <- function (){
   C <- c(0.01, 1, 100, 10^4, 10^6)
     for (cost in C){
       model <- svm ( y ~ . , data = OnevFive.train, kernel="radial", cost = cost, 
-                     scale=FALSE, shrinking=FALSE, type="C-classification")
+                     scale=FALSE, shrinking=FALSE, type="C-classification",
+                     gamma=1)
       
-      predEin <- predict (model, OnevFive.train)
-      match <- sum(predEin == OnevFive.train$y)/ length(OnevFive.train$y)
+      match <- getError(model, OnevFive.train)
       EinErr <- c(EinErr, match)
-      predEout <- predict (model, OnevFive.test)
-      match <- sum(predEout == OnevFive.test$y)/ length(OnevFive.test$y)
+      match <- getError(model, OnevFive.test)
       EoutErr <- c(EoutErr, match)
     }
   
