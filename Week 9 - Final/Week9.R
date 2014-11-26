@@ -322,6 +322,8 @@ do_ex14 <- function () {
     centres <- new_centres
     print (convergence)
   }
+  
+  print ("now still need to pick the weights.slide 14or 46:40 lecture 16")
 }
 
 
