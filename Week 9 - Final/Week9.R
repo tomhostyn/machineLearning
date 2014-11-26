@@ -245,6 +245,87 @@ ex12 <- function () {
 }
 
 
+
+############### RBF 
+
+rbf_target <- function (x1,x2){  
+  sign(x2 - x1 + 0.25*sin(pi*x1))
+}
+
+rbf_get_train <- function (N=100){
+  x1 <- runif (N, -1, 1)
+  x2 <- runif (x1, -1, 1)
+  y <- rbf_target(x1,x2)
+  data.frame(x1,x2,y)
+}
+
+
+rbf_plot <- function (d){
+  plot (d$x1, d$x2, col=d$y + 2)
+}
+
+rbf_getError <- function (model, validation){
+  pred <- predict (model, validation)
+  1- sum(sign(as.numeric(pred)-1.5) == validation$y)/ length(validation$y)
+}
+
+do_ex13 <- function () {
+  train <- rbf_get_train (100)
+  
+  model <- svm ( y ~ . , train, kernel="radial", cost = 1e20, 
+                 scale=FALSE, shrinking=FALSE, type="C-classification",
+                 gamma=1.5)
+  
+  match <- rbf_getError (model, train) 
+  match
+}
+
+ex13 <- function () {
+  err <- sapply (1:1000, function (x){do_ex13()})
+  print (mean(err))
+  print(summary(err))
+}
+
+norm_vec <- function(x) sqrt(sum(x^2))
+
+lloyd_get_centres <- function (data, clusters){
+  centres <- sapply (unique(clusters),
+  function (c){
+    clusterData <- data[clusters ==c,]
+    apply (clusterData, 2, sum)/nrow(clusterData)
+  })
+  t(centres)
+}
+  
+lloyd_get_clusters <- function (data, centres){
+  apply (data, 1, function (r){
+    distances <- apply(centres, 1, function (c){norm_vec(r-c)^2})
+    which.min(distances)})
+}
+
+do_ex14 <- function () {
+  
+  train <- rbf_get_train()
+  
+  #initialize centres at random
+  NumCentres <- 6
+  x1 <- runif (NumCentres, -1, 1)
+  x2 <- runif (x1, -1, 1)
+  centres <- data.frame(x1, x2)
+  
+  convergence <- 1e20
+  while (convergence >= 0.001){
+    clusters <-  lloyd_get_clusters(train[1:2], centres)
+    new_centres <- lloyd_get_centres(train[1:2], clusters)
+    
+    convergence <- sum (apply (centres - new_centres, 1, norm_vec))
+    centres <- new_centres
+    print (convergence)
+  }
+}
+
+
+
 ex20 <- function () {
   
   # f(x) = 0
