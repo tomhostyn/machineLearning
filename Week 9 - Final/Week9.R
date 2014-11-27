@@ -362,7 +362,7 @@ do_ex14 <- function (kernels, gamma){
   
   if (rbf_model$emptyClusters){
     ## start over
-    do_ex14()
+    do_ex14(kernels, gamma)
   } else {
     list (E_out_rbf=E_out_rbf, E_out_rbfsvm=E_out_rbfsvm)
   }
@@ -379,6 +379,64 @@ ex15 <- function () {
   results <- sapply (1:100,  function (x) {do_ex14(12, 1.5)})
   firstbest <- apply (t(results), 1, function (x){x$E_out_rbfsvm < x$E_out_rbf})
   sum(firstbest)/length(firstbest)
+}
+
+do_ex16 <- function (kernel1, kernel2, gamma1, gamma2){
+  train <- rbf_get_train(100)
+  test <- rbf_get_train(10000)
+  
+  rbf_model1 <- RBF(train, gamma1, kernel1)
+  E_in_1 <- rbf_getError(rbf_model1, train, gamma1)
+  E_out_1 <- rbf_getError(rbf_model1, test, gamma1)
+  
+  rbf_model2 <- RBF(train, gamma2, kernel2)
+  E_in_2 <- rbf_getError(rbf_model2, train, gamma2)
+  E_out_2 <- rbf_getError(rbf_model2, test, gamma2)
+  
+  
+  
+  if (rbf_model1$emptyClusters || rbf_model2$emptyClusters){
+    ## start over
+    do_ex16(kernel1, kernel2, gamma1, gamma2)
+  } else {
+    c(E_in_1=E_in_1, E_out_1=E_out_1,E_in_2=E_in_2, E_out_2=E_out_2)
+  }
+}
+
+ex16 <- function (){
+  results <- t(sapply (1:100,  function (x) {do_ex16(9, 12, 1.5, 1.5)}))
+  print (paste ("Ein increases : ", sum(results[,"E_in_1"] < results[,"E_in_2"])))  
+  print (paste ("Ein decreases : ", sum(results[,"E_in_1"] > results[,"E_in_2"])))  
+  print (paste ("Eout increases : ", sum(results[,"E_out_1"] < results[,"E_out_2"])))  
+  print (paste ("Eout decreases : ", sum(results[,"E_out_1"] > results[,"E_out_2"])))
+  print ("Ein change:")
+  print(summary(results[,"E_in_2"] - results[,"E_in_1"]))
+  print ("Eout change:")
+  print(summary(results[,"E_out_2"] - results[,"E_out_1"]))  
+}
+
+ex17 <- function (){
+  results <- t(sapply (1:100,  function (x) {do_ex16(9, 9, 1.5, 2)}))
+  print (paste ("Ein increases : ", sum(results$E_in_1 < results$E_in_2)))  
+  print (paste ("Ein decreases : ", sum(results$E_in_1 > results$E_in_2)))  
+  print (paste ("Eout increases : ", sum(results$E_out_1 < results$E_out_2)))  
+  print (paste ("Eout decreases : ", sum(results$E_out_1 > results$E_out_2)))
+  print ("Ein change:")
+  print(summary(results$E_in_2 - results$E_in_1))
+  print ("Ein change:")
+  print(summary(results$E_out_2 - results$E_out_1))  
+}
+
+ex18 <- function (){
+  results <- t(sapply (1:100,  function (x) {do_ex16(9, 9, 1.5, 2)}))
+  print (paste ("Ein increases : ", sum(results$E_in_1 < results$E_in_2)))  
+  print (paste ("Ein decreases : ", sum(results$E_in_1 > results$E_in_2)))  
+  print (paste ("Eout increases : ", sum(results$E_out_1 < results$E_out_2)))  
+  print (paste ("Eout decreases : ", sum(results$E_out_1 > results$E_out_2)))
+  print ("Ein change:")
+  print(summary(results$E_in_2 - results$E_in_1))
+  print ("Ein change:")
+  print(summary(results$E_out_2 - results$E_out_1))  
 }
 
 
