@@ -264,7 +264,7 @@ rbf_plot <- function (d){
   plot (d$x1, d$x2, col=d$y + 2)
 }
 
-rbf_getError <- function (model, validation){
+rbfsvm_getError <- function (model, validation){
   pred <- predict (model, validation)
   1- sum(sign(as.numeric(pred)-1.5) == validation$y)/ length(validation$y)
 }
@@ -276,7 +276,7 @@ do_ex13 <- function () {
                  scale=FALSE, shrinking=FALSE, type="C-classification",
                  gamma=1.5)
   
-  match <- rbf_getError (model, train) 
+  match <- rbfsvm_getError (model, train) 
   match
 }
 
@@ -287,6 +287,13 @@ ex13 <- function () {
 }
 
 norm_vec <- function(x) sqrt(sum(x^2))
+
+rbf_getError <- function (model, validation, gamma){
+  pred <- apply(validation [1:2],1, function (x){
+    sum(apply (model$coef, 1, function (coef){coef["w"] * exp(-gamma*norm_vec(x-coef[1:2])^2)}))
+  })  
+  1- sum(sign(pred) == validation$y)/length(validation$y)
+}
 
 lloyd_get_centres <- function (data, clusters){
   centres <- sapply (unique(clusters),
@@ -315,29 +322,64 @@ lloyd_get_weights <- function (data, centres,lambda, y){
 }
 
 
-do_ex14 <- function (lambda=1.5) {
-  train <- rbf_get_train()
-  
+RBF <- function (train, lambda=1.5, NumCentres=6) {
   #initialize centres at random
-  NumCentres <- 6
   x1 <- runif (NumCentres, -1, 1)
   x2 <- runif (x1, -1, 1)
   centres <- data.frame(x1, x2)
   
   convergence <- 1e20
-  while (convergence >= 0.001){
+  while (convergence >= 0.0001){
     clusters <-  lloyd_get_clusters(train[1:2], centres)
     new_centres <- lloyd_get_centres(train[1:2], clusters)
     
     convergence <- sum (apply (centres - new_centres, 1, norm_vec))
     centres <- new_centres
-    print (convergence)
   }
-    
+  
+  result <- list()
   w <- lloyd_get_weights(train[1:2], centres, lambda, train[3])
-  w
+  result$coef <- data.frame (centres,w=w) 
+  names(result$coef) <- c("x1", "x2", "w")
+  result$emptyClusters <- min(table(clusters)) == 0 # running with empty clusters
+
+  if (result$emptyClusters) {warning ("running with empty clusters")}
+  result
 }
 
+
+do_ex14 <- function (kernels, gamma){
+  train <- rbf_get_train(100)
+  test <- rbf_get_train(10000)
+    
+  rbf_model <- RBF(train, gamma, kernels)
+  E_out_rbf <- rbf_getError(rbf_model, test, gamma)
+  
+  svm_model <-  svm ( y ~ . , train, kernel="radial", cost = 1e20, 
+                                scale=FALSE, shrinking=FALSE, type="C-classification",
+                                gamma=gamma)
+  E_out_rbfsvm <- rbfsvm_getError (svm_model, test) 
+  
+  if (rbf_model$emptyClusters){
+    ## start over
+    do_ex14()
+  } else {
+    list (E_out_rbf=E_out_rbf, E_out_rbfsvm=E_out_rbfsvm)
+  }
+}
+
+ex14 <- function () {
+  results <- sapply (1:100,  function (x) {do_ex14(9, 1.5)})
+  firstbest <- apply (t(results), 1, function (x){x$E_out_rbfsvm < x$E_out_rbf})
+  sum(firstbest)/length(firstbest)
+} 
+
+
+ex15 <- function () {
+  results <- sapply (1:100,  function (x) {do_ex14(12, 1.5)})
+  firstbest <- apply (t(results), 1, function (x){x$E_out_rbfsvm < x$E_out_rbf})
+  sum(firstbest)/length(firstbest)
+}
 
 
 ex20 <- function () {
