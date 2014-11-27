@@ -303,8 +303,19 @@ lloyd_get_clusters <- function (data, centres){
     which.min(distances)})
 }
 
-do_ex14 <- function () {
+lloyd_get_weights <- function (data, centres,lambda, y){
+  Phi <- apply (data, 1,
+                     function (x){
+                       apply (centres, 1, function (c){exp(-lambda*norm_vec(x-c)^2)})
+                     })
+  Phi <- t(as.matrix(Phi))
   
+  w <- solve (t(Phi) %*% Phi) %*% t(Phi)%*% as.matrix(y, nrow=1)
+  w
+}
+
+
+do_ex14 <- function (lambda=1.5) {
   train <- rbf_get_train()
   
   #initialize centres at random
@@ -322,8 +333,9 @@ do_ex14 <- function () {
     centres <- new_centres
     print (convergence)
   }
-  
-  print ("now still need to pick the weights.slide 14or 46:40 lecture 16")
+    
+  w <- lloyd_get_weights(train[1:2], centres, lambda, train[3])
+  w
 }
 
 
