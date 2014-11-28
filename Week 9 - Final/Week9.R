@@ -217,6 +217,21 @@ ex10 <- function () {
   cbind(lambda, E_in, E_out)
 }
 
+ex10ghost <- function () {
+  
+  features.train <- read.table("features.train")
+  names (features.train) <- c("digit", "symmetry", "intensity")
+  
+  features.test <- read.table("features.test")
+  names (features.test) <- c("digit", "symmetry", "intensity")
+  
+  lambda <- c(0.01,1)
+  E_in <- sapply (lambda, function (x) {do_ex10(4,6, x,transform_8, features.train, features.train)})
+  E_out <- sapply (lambda, function (x) {do_ex10(4,6, x,transform_8, features.train, features.test)})
+  cbind(lambda, E_in, E_out)
+}
+
+
 
 
 ex12 <- function () {
@@ -417,26 +432,37 @@ ex16 <- function (){
 
 ex17 <- function (){
   results <- t(sapply (1:100,  function (x) {do_ex16(9, 9, 1.5, 2)}))
-  print (paste ("Ein increases : ", sum(results$E_in_1 < results$E_in_2)))  
-  print (paste ("Ein decreases : ", sum(results$E_in_1 > results$E_in_2)))  
-  print (paste ("Eout increases : ", sum(results$E_out_1 < results$E_out_2)))  
-  print (paste ("Eout decreases : ", sum(results$E_out_1 > results$E_out_2)))
+  print (paste ("Ein increases : ", sum(results[,"E_in_1"] < results[,"E_in_2"])))  
+  print (paste ("Ein decreases : ", sum(results[,"E_in_1"] > results[,"E_in_2"])))  
+  print (paste ("Eout increases : ", sum(results[,"E_out_1"] < results[,"E_out_2"])))  
+  print (paste ("Eout decreases : ", sum(results[,"E_out_1"] > results[,"E_out_2"])))
   print ("Ein change:")
-  print(summary(results$E_in_2 - results$E_in_1))
-  print ("Ein change:")
-  print(summary(results$E_out_2 - results$E_out_1))  
+  print(summary(results[,"E_in_2"] - results[,"E_in_1"]))
+  print ("Eout change:")
+  print(summary(results[,"E_out_2"] - results[,"E_out_1"]))  
+}
+
+
+do_ex18 <- function (kernel1, gamma1){
+  train <- rbf_get_train(100)
+  test <- rbf_get_train(10000)
+  
+  rbf_model1 <- RBF(train, gamma1, kernel1)
+  E_in_1 <- rbf_getError(rbf_model1, train, gamma1)
+  
+  
+  
+  if (rbf_model1$emptyClusters){
+    ## start over
+    do_ex18(kernel1, gamma1)
+  } else {
+    E_in_1
+  }
 }
 
 ex18 <- function (){
-  results <- t(sapply (1:100,  function (x) {do_ex16(9, 9, 1.5, 2)}))
-  print (paste ("Ein increases : ", sum(results$E_in_1 < results$E_in_2)))  
-  print (paste ("Ein decreases : ", sum(results$E_in_1 > results$E_in_2)))  
-  print (paste ("Eout increases : ", sum(results$E_out_1 < results$E_out_2)))  
-  print (paste ("Eout decreases : ", sum(results$E_out_1 > results$E_out_2)))
-  print ("Ein change:")
-  print(summary(results$E_in_2 - results$E_in_1))
-  print ("Ein change:")
-  print(summary(results$E_out_2 - results$E_out_1))  
+  results <- sapply (1:100,  function (x) {do_ex18(9, 1.5)})
+  sum(results == 0)/length(results) 
 }
 
 
